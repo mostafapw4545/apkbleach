@@ -9,11 +9,17 @@ Usage: BypassAV <path/to/file.apk>
 Options:
 
   -o  <outputname.apk>        Sets the name of custom output file
+  
   -i  <path/to/image.png>     Sets image.png as the icon of the file.apk
+  
   -h                          Help menu\n
 
 Examples: 
+
 BypassAV /root/backdoor.apk
+
 BypassAV /root/backdoor.apk -o AndroidServices.apk
+
 BypassAV /root/backdoor.apk -o AndroidServices.apk -i /root/settings.png
+
 BypassAV /root/backdoor.apk -i /root/settings.png
