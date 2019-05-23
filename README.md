@@ -6,7 +6,7 @@ After you cd into the repo directory run the install script or manually move Byp
    
 Usage: BypassAV <path/to/file.apk>
 
-Options:
+Options:\n
   -o  <outputname.apk>        Sets the name of custom output file
   -i  <path/to/image.png>     Sets image.png as the icon of the file.apk
   -h                          Help menu\n
