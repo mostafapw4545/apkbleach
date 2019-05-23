@@ -12,7 +12,7 @@ Options:
   
         -i  <path/to/image.png>     Sets image.png as the icon of the file.apk
   
-        -h                          Help menu\n
+        -h                          Help menu
 
 Examples: 
 
