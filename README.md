@@ -4,7 +4,9 @@ This BASH script will remove the obvious fingerprints of metasploit through out 
 After you cd into the repo directory run the install script or manually move BypassAV to /usr/local/bin
    $ bash install.sh
    
-Usage: BypassAV <path/to/file.apk>
+Usage: 
+
+         BypassAV <path/to/file.apk>
 
 Options:
 
