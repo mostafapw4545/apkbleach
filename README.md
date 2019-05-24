@@ -1,12 +1,12 @@
 # Bypass_AV
 This BASH script will remove the obvious fingerprints of metasploit through out a given apk file. It also gives the option to inject a custom app icon
 
-After you cd into the repo directory run the install script or manually move BypassAV to /usr/local/bin
+After you cd into the repo directory run the install script or manually move apkbleach to /usr/local/bin
    $ bash install.sh
    
 Usage: 
 
-         BypassAV <path/to/file.apk>
+         apkbleach <path/to/file.apk>
 
 Options:
 
@@ -18,10 +18,10 @@ Options:
 
 Examples: 
 
-         BypassAV /root/backdoor.apk
+         apkbleach /root/backdoor.apk
 
-         BypassAV /root/backdoor.apk -o AndroidServices.apk
+         apkbleach /root/backdoor.apk -o AndroidServices.apk
 
-         BypassAV /root/backdoor.apk -o AndroidServices.apk -i /root/settings.png
+         apkbleach /root/backdoor.apk -o AndroidServices.apk -i /root/settings.png
 
-         BypassAV /root/backdoor.apk -i /root/settings.png
+         apkbleach /root/backdoor.apk -i /root/settings.png
