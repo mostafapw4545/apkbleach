@@ -43,9 +43,9 @@ ${YELLOW}Options:${BLUE}
   -i  <path/to/image.png>           Sets image.png as the icon of the file.apk
   -h                                Help menu\n
 ${YELLOW}Examples:${BLUE} 
-BypassAV /root/backdoor.apk
-BypassAV /root/backdoor.apk -o /root/PAYLOADS/AndroidServices.apk
-BypassAV /root/backdoor.apk -o /root/PAYLOADS/AndroidServices.apk -i /root/settings.png${RESTORE}
+apkbleach /root/backdoor.apk
+apkbleach /root/backdoor.apk -o /root/PAYLOADS/AndroidServices.apk
+apkbleach /root/backdoor.apk -o /root/PAYLOADS/AndroidServices.apk -i /root/settings.png${RESTORE}
 ";echo;exit
 }
 [[ $# -eq 0 ]] && bash $0 -h && exit
