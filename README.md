@@ -6,7 +6,7 @@ After you cd into the repo directory run the install script or manually move apk
    
 Usage: 
 
-         apkbleach <path/to/file.apk>
+         Usage: apkbleach -g <android/payload/to/use LHOST=ip-address-to-use LPORT=port-to-use> -i <path/to/image.png> -o  <path/to/outputname.apk>
 
 Options:
 
