@@ -10,19 +10,19 @@ Usage:
 
 options: 
 
-  -g <android/payload/to/use LHOST=ip-address-to-use LPORT=port-to-use>
-      Generates obfuscated payload with nops
+      -g <android/payload/to/use LHOST=ip-address-to-use LPORT=port-to-use>
+          Generates obfuscated payload with nops
   
-  -i <path/to/image.png> [ use -i --list ] to list defaults
-      Sets image as the icon of the file.apk
+      -i <path/to/image.png> [ use -i --list ] to list defaults
+          Sets image as the icon of the file.apk
   
-  -o  <path/to/outputname.apk>
-      Sets the name of custom output file
+      -o  <path/to/outputname.apk>
+          Sets the name of custom output file
   
-  -x <path/to/apk>
-      Uses pre generated metasploit payload to obfuscate
+      -x <path/to/apk>
+          Uses pre generated metasploit payload to obfuscate
   
-  -h  Help menu
+      -h  Help menu
 
 Examples: 
 
