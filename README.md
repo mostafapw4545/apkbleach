@@ -8,7 +8,7 @@ Usage:
 
          Usage: apkbleach -g <android/payload/to/use LHOST=ip-address-to-use LPORT=port-to-use> -i <path/to/image.png> -o  <path/to/outputname.apk>
 
-options: 
+Options: 
 
       -g <android/payload/to/use LHOST=ip-address-to-use LPORT=port-to-use>
           Generates obfuscated payload with nops
