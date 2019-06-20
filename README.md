@@ -1,8 +1,5 @@
 # apkbleach
 This BASH script will remove the obvious fingerprints of metasploit through out a given apk file. It also gives the option to inject a custom app icon
-
-After you cd into the repo directory run the install script or manually move apkbleach to /usr/local/bin
-   $ bash install.sh
    
 Usage: 
 
